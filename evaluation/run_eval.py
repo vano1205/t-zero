@@ -38,7 +38,7 @@ from transformers import (
     AutoTokenizer,
     default_data_collator,
 )
-from promptsource.templates import DatasetTemplates
+from promptsource.promptsource.templates import DatasetTemplates
 
 from t0.data_collator import DataCollatorForMultipleChoice
 from t0.model import ModelBase
@@ -114,7 +114,7 @@ def parse_args():
     parser.add_argument(
         "--per_device_eval_batch_size",
         type=int,
-        default=8,
+        default=2,
         help="Batch size (per device) for the evaluation dataloader.",
     )
     parser.add_argument(
@@ -136,6 +136,13 @@ def parse_args():
             "Note that this feature is still experimental in HF Transformers."
         ),
     )
+    parser.add_argument(
+        "--checkpoint_path",
+        type=str,
+        default=None,
+        help="If passed, will load checkpoint",
+    )
+
     args = parser.parse_args()
 
     return args
@@ -176,8 +183,17 @@ def main():
         # Downloading and loading a dataset from the hub.
         if args.dataset_name == "anli":
             raw_datasets = load_dataset(args.dataset_name, split=args.dataset_config_name)
+        elif args.dataset_name == 'imdb' or args.dataset_name == 'amazon_polarity':
+            raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name, split="test")
+            if len(raw_datasets)>500:
+                shuffled = raw_datasets.shuffle(seed=40)
+                raw_datasets=shuffled.select(range(500))
+                
         else:
             raw_datasets = load_dataset(args.dataset_name, args.dataset_config_name, split="validation")
+            if len(raw_datasets)>500:
+                shuffled = raw_datasets.shuffle(seed=40)
+                raw_datasets=shuffled.select(range(500))
     #TODO(Victor): enable loading pre-processed dataset from https://huggingface.co/datasets/bigscience/P3
 
     # Trim a number of evaluation examples
@@ -221,6 +237,7 @@ def main():
     model = ModelBase.from_config(
         config=config,
         model_name_or_path=args.model_name_or_path,
+        checkpoint_path=args.checkpoint_path,
         parallelize=args.parallelize
     )
 
@@ -249,6 +266,7 @@ def main():
                 for k in column_names
             }
             input, target = template.apply(ex)
+            # print(input)
             ex_answer_choices = template.get_answer_choices_list(ex)
             assert target in ex_answer_choices
             input_texts.append(input)

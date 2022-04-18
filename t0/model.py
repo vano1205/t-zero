@@ -27,7 +27,7 @@ class ModelBase(nn.Module):
         raise NotImplementedError
 
 class EncoderDecoderModel(ModelBase):
-    def __init__(self, config, model_name_or_path: Optional[str], parallelize: bool, **kwargs):
+    def __init__(self, config, model_name_or_path: Optional[str], checkpoint_path: Optional[str], parallelize: bool, **kwargs):
         """
 
         Args:
@@ -44,6 +44,15 @@ class EncoderDecoderModel(ModelBase):
                 from_tf=bool(".ckpt" in model_name_or_path),
                 config=config,
             )
+            if checkpoint_path:
+                checkpoint_dict = torch.load(checkpoint_path)['state_dict']
+                checkpoint_dict_new = {}
+                for key in checkpoint_dict.keys():
+                    if 'model.' in key:
+                        new_key = key.replace('model.','')
+                        checkpoint_dict_new[new_key] = checkpoint_dict[key]
+                    
+                self._model.load_state_dict(checkpoint_dict_new)
         else:
             logger.info("Training new model from scratch")
             self._model = AutoModelForSeq2SeqLM.from_config(config)
