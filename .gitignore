@@ -34,7 +34,9 @@ MANIFEST
 *.spec
 
 evaluation/datasets
+evaluation/*.sh
 outputs
+evaluation/debug
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

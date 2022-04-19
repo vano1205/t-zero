@@ -69,7 +69,11 @@ def evaluation(accelerator, tokenizer, model, args, eval_dataset, logger, task_n
     for batch in eval_dataloader:
         with torch.no_grad():
             predictions = model(batch)
-            prediction_gather.append(predictions)
+            
+            if task_name == "negation":
+                prediction_gather.append(torch.Tensor([1-x for x in predictions]).type(torch.int))
+            else:
+                prediction_gather.append(predictions)
             target_gather.append(batch["targets"])
 
         metric.add_batch(
@@ -97,11 +101,11 @@ def evaluation(accelerator, tokenizer, model, args, eval_dataset, logger, task_n
 
 def evaluation_agreement(accelerator, tokenizer, model, args, eval_dataset_or_list, target_dataset_or_list, logger, task_name):
     if type(eval_dataset_or_list)!= list:
-        eval_list = evaluation(accelerator, tokenizer, model, args, eval_dataset_or_list, logger, task_name)
+        eval_list, _ = evaluation(accelerator, tokenizer, model, args, eval_dataset_or_list, logger, task_name)
     else:
         eval_list = eval_dataset_or_list
     if type(target_dataset_or_list)!= list:
-        target_list = evaluation(accelerator, tokenizer, model, args, target_dataset_or_list, logger, task_name) 
+        target_list, _ = evaluation(accelerator, tokenizer, model, args, target_dataset_or_list, logger, task_name) 
     else:
         target_list = target_dataset_or_list   
 

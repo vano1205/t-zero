@@ -138,6 +138,12 @@ def parse_args():
             "Note that this feature is still experimental in HF Transformers."
         ),
     )
+    parser.add_argument(
+        "--checkpoint_path",
+        type=str,
+        default=None,
+        help="If passed, will load checkpoint",
+    )
     args = parser.parse_args()
 
     return args
@@ -234,8 +240,10 @@ def main():
     model = ModelBase.from_config(
         config=config,
         model_name_or_path=args.model_name_or_path,
+        checkpoint_path=args.checkpoint_path,
         parallelize=args.parallelize
     )
+
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
@@ -332,10 +340,10 @@ def main():
 
     eval_list, target_gather = evaluation(accelerator, tokenizer, model, args, eval_dataset, logger, "instructive")
     eval_list_negation, target_gather_negation = evaluation(accelerator, tokenizer, model, args, eval_dataset_negation, logger, "negation")
-    print(target_gather)
-    print(target_gather_negation)
-    #evaluation_agreement(accelerator, tokenizer, model, args, eval_list_negation,eval_list, logger, "agreement_instructive_negation")
-    #evaluation_agreement(accelerator, tokenizer, model, args, eval_dataset_null,eval_list, logger, "agreement_instructive_null")
+    #print(eval_list)
+    #print(eval_list_negation)
+    evaluation_agreement(accelerator, tokenizer, model, args, eval_list_negation,eval_list, logger, "agreement_instructive_negation")
+    evaluation_agreement(accelerator, tokenizer, model, args, eval_dataset_null,eval_list, logger, "agreement_instructive_null")
 
 
 
